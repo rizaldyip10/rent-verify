@@ -1,0 +1,1113 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>RentVerify – UTM Student Housing</title>
+    <link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700;1,9..40,400&family=Syne:wght@600;700;800&display=swap" rel="stylesheet"/>
+    <style>
+      *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+      :root {
+        /* ── Brand palette ── */
+        --primary:       #5B5BD6;   /* vibrant indigo */
+        --primary-dk:    #4338CA;
+        --primary-lt:    #EDEDFF;
+        --accent:        #F97316;   /* warm orange – prices, accents */
+        --verified:      #16A34A;   /* green – verification ONLY */
+        --verified-lt:   #DCFCE7;
+        /* ── Neutrals ── */
+        --white:  #ffffff;
+        --bg:     #F8F7FF;
+        --card:   #ffffff;
+        --text-1: #1E1B4B;
+        --text-2: #6B7280;
+        --text-3: #9CA3AF;
+        --border: #E5E7EB;
+        --star:   #F59E0B;
+        --radius-card: 20px;
+        --radius-pill: 100px;
+      }
+      html, body {
+        height: 100%;
+        background: var(--bg);
+        font-family: "DM Sans", sans-serif;
+      }
+
+      /* ── app container (fills the real viewport, no phone frame) ── */
+      .device-shell {
+        width: 100%;
+        max-width: 480px;      /* keeps it tidy on desktop; full width on phones */
+        height: 100dvh;
+        margin: 0 auto;
+        background: var(--bg);
+        overflow: hidden;
+        position: relative;
+      }
+      .screens-wrapper { width: 100%; height: 100%; position: relative; }
+
+      .screen {
+        position: absolute; inset: 0;
+        background: var(--bg);
+        display: flex; flex-direction: column;   /* lets content scroll, nav pin to bottom */
+        opacity: 0; pointer-events: none; transform: translateX(40px);
+        transition: opacity .32s cubic-bezier(.4,0,.2,1), transform .32s cubic-bezier(.4,0,.2,1);
+      }
+      .screen.active  { opacity: 1; pointer-events: all; transform: translateX(0); }
+      .screen.exit-left { opacity: 0; transform: translateX(-40px); pointer-events: none; }
+
+      /* scrollable region inside each screen */
+      .screen-scroll {
+        flex: 1 1 auto;
+        overflow-y: auto;
+        overflow-x: hidden;
+        scrollbar-width: none;
+        -webkit-overflow-scrolling: touch;
+      }
+      .screen-scroll::-webkit-scrollbar { display: none; }
+
+      /* ── bottom nav bar (always visible, pinned to viewport bottom) ── */
+      .nav-bar {
+        flex: 0 0 auto;
+        margin: 8px 16px calc(8px + env(safe-area-inset-bottom, 0px));
+        background: var(--white); border-radius: 28px;
+        display: flex; height: 62px; padding: 0 6px;
+        box-shadow: 0 8px 32px rgba(0,0,0,.14), 0 2px 8px rgba(0,0,0,.08), inset 0 1px 0 rgba(255,255,255,.9);
+        z-index: 20;
+      }
+      .nav-item {
+        flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center;
+        gap: 3px; cursor: pointer; border-radius: 22px; transition: background .15s;
+      }
+      .nav-item:hover { background: var(--bg); }
+      .nav-icon  { font-size: 20px; line-height: 1; }
+      .nav-label { font-size: 10px; font-weight: 500; color: var(--text-3); }
+      .nav-item.active .nav-label { color: var(--primary); font-weight: 700; }
+      .nav-item.active { background: var(--primary-lt); }
+
+      /* ── top bar ── */
+      .top-bar {
+        height: 56px; display: flex; align-items: center; gap: 12px; padding: 0 20px;
+        background: var(--white); border-bottom: 1px solid var(--border);
+        flex-shrink: 0;
+      }
+      .back-btn {
+        width: 36px; height: 36px; border-radius: 50%; background: var(--bg);
+        border: none; cursor: pointer; display: flex; align-items: center; justify-content: center;
+        font-size: 16px; transition: background .15s, transform .1s; flex-shrink: 0;
+      }
+      .back-btn:active { transform: scale(.93); }
+      .top-bar-title { font-family: "Syne", sans-serif; font-size: 17px; font-weight: 700; color: var(--text-1); }
+      .top-bar-sub   { font-size: 12px; color: var(--text-3); margin-left: auto; }
+
+      /* ── pills ── */
+      .pill {
+        display: inline-flex; align-items: center; gap: 5px;
+        padding: 6px 14px; border-radius: var(--radius-pill);
+        font-size: 12px; font-weight: 600; cursor: pointer; border: none;
+        white-space: nowrap; transition: transform .12s;
+      }
+      .pill:active { transform: scale(.96); }
+      .pill-primary  { background: var(--primary); color: white; }
+      .pill-outline  { background: var(--white); color: var(--text-2); border: 1px solid var(--border); }
+      .pill-accent   { background: #FFF7ED; color: #7C2D12; }
+      .pill-primary-lt { background: var(--primary-lt); color: var(--primary-dk); }
+      .pill-grey     { background: #EFEFED; color: var(--text-3); }
+
+      /* ── verified / unverified badges ── */
+      .verified-circle-badge {
+        width: 32px; height: 32px; border-radius: 50%;
+        background: var(--verified); color: white;
+        display: inline-flex; align-items: center; justify-content: center;
+        font-size: 17px; font-weight: 800;
+        box-shadow: 0 2px 10px rgba(22,163,74,.4);
+        flex-shrink: 0;
+      }
+      .verified-listing-badge {
+        display: inline-flex; align-items: center; gap: 7px;
+        background: var(--verified); color: white;
+        font-size: 10px; font-weight: 700;
+        padding: 5px 11px 5px 6px;
+        border-radius: var(--radius-pill);
+        letter-spacing: .03em; text-transform: uppercase;
+      }
+      .verified-listing-badge .vc {
+        width: 18px; height: 18px; border-radius: 50%;
+        background: rgba(255,255,255,.25);
+        display: flex; align-items: center; justify-content: center;
+        font-size: 11px; flex-shrink: 0;
+      }
+      .unverified-listing-badge {
+        display: inline-flex; align-items: center; gap: 4px;
+        background: #F0EFEB; color: var(--text-3);
+        font-size: 10px; font-weight: 600;
+        padding: 4px 10px; border-radius: var(--radius-pill);
+      }
+      .agent-badge {
+        display: inline-flex; align-items: center; gap: 4px;
+        background: var(--primary-lt); color: var(--primary-dk);
+        font-size: 10px; font-weight: 700; padding: 3px 8px; border-radius: var(--radius-pill);
+      }
+
+      .btn-primary {
+        width: 100%; height: 52px; background: var(--primary); color: white;
+        border: none; border-radius: 16px; font-family: "DM Sans", sans-serif;
+        font-size: 15px; font-weight: 700; cursor: pointer;
+        display: flex; align-items: center; justify-content: center; gap: 8px;
+        transition: background .15s, transform .1s;
+      }
+      .btn-primary:hover  { background: var(--primary-dk); }
+      .btn-primary:active { transform: scale(.98); }
+
+      /* ── Screen 1 – Home ── */
+      .s1-hero {
+        background: linear-gradient(155deg, #5B5BD6 0%, #4338CA 55%, #7C3AED 100%);
+        padding: 24px 20px 24px; position: relative; overflow: hidden;
+      }
+      .s1-hero::before {
+        content: ""; position: absolute; top: -40px; right: -40px;
+        width: 180px; height: 180px; border-radius: 50%;
+        background: rgba(255,255,255,.06);
+      }
+      .s1-hero::after {
+        content: ""; position: absolute; bottom: -30px; left: -20px;
+        width: 120px; height: 120px; border-radius: 50%;
+        background: rgba(255,255,255,.04);
+      }
+      .s1-logo { font-family: "Syne", sans-serif; font-size: 22px; font-weight: 800; color: white; margin-bottom: 4px; letter-spacing: -.02em; }
+      .s1-tagline { font-size: 13px; color: rgba(255,255,255,.75); margin-bottom: 16px; }
+      .home-search-row { display: flex; gap: 10px; align-items: center; }
+      .home-search-box {
+        flex: 1; background: white; border-radius: 14px; height: 48px;
+        display: flex; align-items: center; gap: 10px; padding: 0 14px;
+        font-size: 14px; color: var(--text-3); cursor: pointer;
+        box-shadow: 0 4px 20px rgba(0,0,0,.12); transition: box-shadow .15s;
+      }
+      .home-search-box:hover { box-shadow: 0 6px 24px rgba(0,0,0,.16); }
+      .filter-btn-hero {
+        width: 48px; height: 48px; background: rgba(255,255,255,.15);
+        border: 1.5px solid rgba(255,255,255,.3); border-radius: 14px;
+        display: flex; align-items: center; justify-content: center;
+        cursor: pointer; font-size: 20px; flex-shrink: 0; transition: background .15s;
+      }
+      .filter-btn-hero:hover { background: rgba(255,255,255,.25); }
+      .section-title {
+        font-family: "Syne", sans-serif; font-size: 15px; font-weight: 700;
+        color: var(--text-1); padding: 18px 20px 10px; letter-spacing: -.01em;
+      }
+      .section-sub { font-size: 12px; color: var(--text-3); padding: 0 20px 10px; margin-top: -10px; }
+
+      /* ── Listing cards (small – home feed) ── */
+      .listing-card {
+        margin: 0 20px 14px; border-radius: var(--radius-card); background: var(--card);
+        box-shadow: 0 2px 16px rgba(0,0,0,.07); cursor: pointer; overflow: hidden;
+        transition: transform .18s, box-shadow .18s;
+      }
+      .listing-card:hover  { transform: translateY(-2px); box-shadow: 0 6px 28px rgba(0,0,0,.11); }
+      .listing-card:active { transform: scale(.98); }
+      .listing-img {
+        height: 130px; position: relative; overflow: hidden;
+        display: flex; align-items: center; justify-content: center; font-size: 36px;
+        background-color: #E8E8F4;
+      }
+      .listing-img.has-img { background-size: cover; background-position: center; }
+      .listing-img.has-img::after {
+        content: ""; position: absolute; inset: 0;
+        background: linear-gradient(to bottom, rgba(0,0,0,.05) 0%, rgba(0,0,0,.3) 100%);
+        pointer-events: none;
+      }
+      .badge-pos { position: absolute; top: 10px; left: 10px; z-index: 2; }
+      .price-tag {
+        position: absolute; bottom: 10px; right: 10px; z-index: 2;
+        background: rgba(0,0,0,.6); color: white; font-size: 13px; font-weight: 700;
+        padding: 4px 10px; border-radius: 20px; backdrop-filter: blur(4px);
+      }
+      .listing-body  { padding: 12px 16px; }
+      .listing-title-s { font-size: 14px; font-weight: 600; color: var(--text-1); margin-bottom: 3px; }
+      .listing-loc-s   { font-size: 12px; color: var(--text-2); margin-bottom: 7px; }
+      .listing-foot    { display: flex; justify-content: space-between; align-items: center; }
+      .listing-price-s { font-size: 15px; font-weight: 700; color: var(--accent); }
+      .star-gold { color: var(--star); }
+
+      /* ── Agent strip ── */
+      .agent-strip { display: flex; gap: 12px; padding: 4px 20px 16px; overflow-x: auto; scrollbar-width: none; }
+      .agent-strip::-webkit-scrollbar { display: none; }
+      .agent-chip { display: flex; flex-direction: column; align-items: center; gap: 6px; cursor: pointer; flex-shrink: 0; }
+      .agent-chip-avatar {
+        width: 52px; height: 52px; border-radius: 50%;
+        display: flex; align-items: center; justify-content: center;
+        font-family: "Syne", sans-serif; font-size: 16px; font-weight: 700;
+        color: white; border: 2.5px solid var(--primary-lt);
+      }
+      .agent-chip-name { font-size: 11px; font-weight: 600; color: var(--text-1); text-align: center; max-width: 60px; }
+      .agent-chip-sub  { font-size: 9px; color: var(--primary-dk); font-weight: 600; background: var(--primary-lt); padding: 2px 6px; border-radius: 10px; }
+
+      /* ── Screen 2 – Search ── */
+      .search-screen-bar {
+        padding: 10px 16px 10px 12px; background: var(--white);
+        border-bottom: 1px solid var(--border);
+        flex-shrink: 0;
+        display: flex; gap: 8px; align-items: center;
+      }
+      .search-input-wrap { flex: 1; position: relative; }
+      .search-input {
+        width: 100%; height: 44px; background: var(--bg);
+        border: 1.5px solid var(--border); border-radius: 14px;
+        padding: 0 14px 0 38px; font-family: "DM Sans", sans-serif;
+        font-size: 14px; color: var(--text-1); outline: none; transition: border-color .15s;
+      }
+      .search-input:focus { border-color: var(--primary); background: white; }
+      .search-icon { position: absolute; left: 12px; top: 50%; transform: translateY(-50%); font-size: 15px; pointer-events: none; }
+      .filter-btn-bar {
+        width: 44px; height: 44px; background: var(--primary); border: none; border-radius: 14px;
+        display: flex; align-items: center; justify-content: center;
+        cursor: pointer; font-size: 18px; flex-shrink: 0; transition: background .15s;
+      }
+      .filter-btn-bar:hover { background: var(--primary-dk); }
+      .filter-badge { position: relative; }
+      .filter-badge::after {
+        content: "3"; position: absolute; top: -4px; right: -4px;
+        background: var(--accent); color: white;
+        font-size: 9px; font-weight: 700; width: 16px; height: 16px;
+        border-radius: 50%; display: flex; align-items: center; justify-content: center;
+        font-family: "Syne", sans-serif;
+      }
+      .search-results-header {
+        display: flex; align-items: center; justify-content: space-between; padding: 12px 20px 8px;
+      }
+      .results-count { font-size: 13px; color: var(--text-2); }
+      .results-count span { font-weight: 700; color: var(--text-1); }
+      .sort-btn {
+        font-size: 12px; color: var(--primary); font-weight: 600;
+        background: none; border: none; cursor: pointer; display: flex; align-items: center; gap: 4px;
+      }
+      .no-results { text-align: center; padding: 40px 20px; color: var(--text-3); }
+      .no-results-icon { font-size: 36px; margin-bottom: 10px; }
+      .no-results-text { font-size: 14px; font-weight: 500; }
+
+      /* ── Listing cards full (search / listings) ── */
+      .listing-card-full {
+        margin: 0 20px 14px; border-radius: var(--radius-card);
+        background: var(--card); cursor: pointer; overflow: hidden;
+        transition: transform .18s, box-shadow .18s;
+      }
+      .listing-card-full:hover  { transform: translateY(-2px); box-shadow: 0 8px 32px rgba(0,0,0,.1); }
+      .listing-card-full:active { transform: scale(.98); }
+      .listing-card-full.verified-listing {
+        box-shadow: 0 2px 0 var(--verified), 0 4px 20px rgba(0,0,0,.07);
+        outline: 1.5px solid var(--verified);
+      }
+      .listing-card-full.unverified-listing { box-shadow: 0 2px 12px rgba(0,0,0,.05); opacity: .85; }
+      .listing-img-full {
+        height: 140px; position: relative; overflow: hidden;
+        display: flex; align-items: center; justify-content: center; font-size: 40px;
+        background-color: #E8E8F4;
+      }
+      .listing-img-full.has-img { background-size: cover; background-position: center; }
+      .listing-img-full.has-img::after {
+        content: ""; position: absolute; inset: 0;
+        background: linear-gradient(to bottom, rgba(0,0,0,.05) 0%, rgba(0,0,0,.35) 100%);
+        pointer-events: none;
+      }
+      .img-badge       { position: absolute; top: 12px; left: 12px; z-index: 2; }
+      .img-badge-right {
+        position: absolute; top: 12px; right: 12px; z-index: 2;
+        background: rgba(0,0,0,.55); color: white; font-size: 11px; font-weight: 700;
+        padding: 4px 9px; border-radius: 12px; backdrop-filter: blur(4px);
+      }
+      .listing-body-full   { padding: 14px 16px 16px; }
+      .listing-row         { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 4px; }
+      .listing-title-full  { font-size: 15px; font-weight: 600; color: var(--text-1); flex: 1; margin-right: 8px; }
+      .listing-price-full  { font-size: 15px; font-weight: 700; color: var(--accent); white-space: nowrap; }
+      .listing-loc-full    { font-size: 12px; color: var(--text-2); margin-bottom: 8px; }
+      .listing-features    { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 8px; }
+      .feat-tag { font-size: 11px; background: var(--bg); color: var(--text-2); padding: 3px 8px; border-radius: 8px; }
+      .listing-meta { display: flex; justify-content: space-between; align-items: center; }
+      .rating-text  { font-size: 12px; color: var(--text-2); }
+      .unverified-dim .listing-title-full { color: var(--text-2); }
+      .unverified-dim .listing-price-full { color: var(--text-3); }
+
+      /* ── Filter drawer (bottom sheet) ── */
+      .filter-overlay {
+        position: absolute; inset: 0; background: rgba(0,0,0,.4); z-index: 50;
+        opacity: 0; pointer-events: none; transition: opacity .25s;
+      }
+      .filter-overlay.open { opacity: 1; pointer-events: all; }
+      .filter-drawer {
+        position: absolute; bottom: 0; left: 0; right: 0;
+        background: var(--white); border-radius: 24px 24px 0 0; z-index: 51;
+        transform: translateY(100%); transition: transform .3s cubic-bezier(.4,0,.2,1);
+        max-height: 80%; overflow-y: auto; scrollbar-width: none;
+      }
+      .filter-drawer::-webkit-scrollbar { display: none; }
+      .filter-drawer.open { transform: translateY(0); }
+      .drawer-handle  { width: 36px; height: 4px; background: var(--border); border-radius: 4px; margin: 12px auto 0; }
+      .drawer-header  { display: flex; align-items: center; justify-content: space-between; padding: 16px 20px 12px; }
+      .drawer-title   { font-family: "Syne", sans-serif; font-size: 16px; font-weight: 700; color: var(--text-1); }
+      .drawer-reset   { font-size: 13px; color: var(--primary); font-weight: 600; background: none; border: none; cursor: pointer; }
+      .filter-group        { padding: 16px 20px; border-bottom: 1px solid var(--border); }
+      .filter-group-title  { font-size: 12px; font-weight: 700; color: var(--text-3); margin-bottom: 12px; text-transform: uppercase; letter-spacing: .06em; }
+      .range-track  { position: relative; height: 4px; background: var(--border); border-radius: 4px; margin: 8px 0 20px; }
+      .range-fill   { position: absolute; left: 0; top: 0; width: 58%; height: 100%; background: var(--primary); border-radius: 4px; }
+      .range-thumb  { position: absolute; top: -9px; left: 58%; transform: translateX(-50%); width: 22px; height: 22px; background: var(--primary); border-radius: 50%; border: 3px solid white; box-shadow: 0 2px 8px rgba(91,91,214,.4); }
+      .range-labels { display: flex; justify-content: space-between; font-size: 12px; color: var(--text-3); }
+      .chip-row  { display: flex; gap: 8px; flex-wrap: wrap; }
+      .filter-chip {
+        padding: 8px 14px; border-radius: var(--radius-pill); font-size: 13px; font-weight: 500;
+        border: 1.5px solid var(--border); background: var(--white); color: var(--text-2); cursor: pointer; transition: all .15s;
+      }
+      .filter-chip.selected { background: var(--primary-lt); border-color: var(--primary); color: var(--primary-dk); font-weight: 600; }
+      .verify-toggle-card {
+        margin: 16px 20px; background: var(--verified-lt); border-radius: 16px; padding: 14px 16px;
+        display: flex; align-items: center; justify-content: space-between; gap: 12px;
+        border: 1.5px solid var(--verified);
+      }
+      .verify-toggle-title { font-size: 14px; font-weight: 700; color: #166534; margin-bottom: 2px; }
+      .verify-toggle-sub   { font-size: 12px; color: var(--text-2); line-height: 1.4; }
+      .toggle-track {
+        width: 52px; height: 30px; border-radius: 15px; background: var(--verified);
+        position: relative; cursor: pointer; flex-shrink: 0; transition: background .2s;
+      }
+      .toggle-track.off { background: var(--border); }
+      .toggle-thumb {
+        position: absolute; top: 5px; right: 5px; width: 20px; height: 20px;
+        background: white; border-radius: 50%; box-shadow: 0 1px 4px rgba(0,0,0,.2); transition: right .2s;
+      }
+      .toggle-track.off .toggle-thumb { right: 27px; }
+      .drawer-apply { padding: 16px 20px 24px; }
+
+      /* ── Screen 3 – Listing Detail ── */
+      .listing-hero {
+        height: 220px; position: relative; overflow: hidden;
+        display: flex; align-items: center; justify-content: center; font-size: 60px;
+        background-color: #E8E8F4;
+      }
+      .listing-hero.has-img { background-size: cover; background-position: center; }
+      .listing-hero.has-img::after {
+        content: ""; position: absolute; inset: 0;
+        background: linear-gradient(to bottom, rgba(0,0,0,.1) 0%, rgba(0,0,0,.5) 100%);
+        pointer-events: none;
+      }
+      .listing-hero-badge { position: absolute; top: 16px; left: 16px; z-index: 2; }
+      .listing-hero-price {
+        position: absolute; bottom: 16px; right: 16px; z-index: 2;
+        background: rgba(0,0,0,.65); color: white; font-size: 15px; font-weight: 700;
+        padding: 6px 14px; border-radius: 20px; backdrop-filter: blur(6px);
+      }
+      .listing-detail-body  { padding: 20px; }
+      .listing-detail-title { font-family: "Syne", sans-serif; font-size: 19px; font-weight: 700; color: var(--text-1); margin-bottom: 6px; }
+      .listing-detail-loc   { font-size: 13px; color: var(--text-2); margin-bottom: 14px; }
+      .features-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 16px; }
+      .feature-item  { background: var(--bg); border-radius: 12px; padding: 10px 12px; font-size: 12px; color: var(--text-2); display: flex; align-items: center; gap: 8px; }
+      .feature-icon  { font-size: 16px; }
+      .verify-status-box { border-radius: 14px; padding: 14px 16px; margin-bottom: 16px; }
+      .verify-status-box.verified  { background: var(--verified-lt); border: 1.5px solid var(--verified); }
+      .verify-status-box.unverified { background: #F8F8F6; border: 1.5px solid var(--border); }
+      .verify-status-title { font-size: 13px; font-weight: 700; margin-bottom: 3px; }
+      .verify-status-title.verified   { color: #166534; }
+      .verify-status-title.unverified { color: var(--text-3); }
+      .verify-status-sub { font-size: 12px; color: var(--text-2); line-height: 1.5; }
+      .agent-row-card {
+        display: flex; align-items: center; gap: 12px;
+        background: var(--white); border: 1px solid var(--border); border-radius: 14px;
+        padding: 12px 14px; margin-bottom: 16px; cursor: pointer; transition: background .15s;
+      }
+      .agent-row-card:hover { background: var(--primary-lt); }
+      .agent-row-avatar { width: 44px; height: 44px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-family: "Syne", sans-serif; font-size: 15px; font-weight: 700; color: white; flex-shrink: 0; }
+      .agent-row-name   { font-size: 14px; font-weight: 600; color: var(--text-1); }
+      .agent-row-sub    { font-size: 12px; color: var(--text-2); margin-top: 2px; }
+      .agent-row-arrow  { margin-left: auto; font-size: 16px; color: var(--text-3); }
+
+      /* ── Screen 5 – Agent Profile ── */
+      .agent-hero        { background: var(--primary-lt); padding: 28px 20px 20px; display: flex; flex-direction: column; align-items: center; gap: 10px; }
+      .agent-avatar      { width: 80px; height: 80px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-family: "Syne", sans-serif; font-size: 26px; font-weight: 700; color: white; box-shadow: 0 4px 16px rgba(91,91,214,.3); }
+      .agent-name        { font-family: "Syne", sans-serif; font-size: 20px; font-weight: 700; color: var(--text-1); }
+      .agent-sub-text    { font-size: 13px; color: var(--text-2); text-align: center; }
+      .agent-stats       { display: grid; grid-template-columns: repeat(3,1fr); border-top: 1px solid var(--border); border-bottom: 1px solid var(--border); }
+      .agent-stat        { padding: 16px 8px; display: flex; flex-direction: column; align-items: center; gap: 3px; border-right: 1px solid var(--border); }
+      .agent-stat:last-child { border-right: none; }
+      .stat-val  { font-family: "Syne", sans-serif; font-size: 18px; font-weight: 700; color: var(--text-1); }
+      .stat-lbl  { font-size: 11px; color: var(--text-3); font-weight: 500; }
+      .info-section       { padding: 20px; border-bottom: 1px solid var(--border); }
+      .info-section-title { font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: .06em; color: var(--text-3); margin-bottom: 10px; }
+      .info-text    { font-size: 13px; color: var(--text-2); line-height: 1.6; }
+      .license-card { background: var(--primary-lt); border-radius: 12px; padding: 12px 16px; margin-top: 12px; }
+      .license-main { font-size: 13px; font-weight: 600; color: var(--primary-dk); margin-bottom: 3px; }
+      .license-sub  { font-size: 12px; color: var(--text-2); }
+      .listing-mini { display: flex; align-items: center; gap: 12px; padding: 12px; background: var(--bg); border-radius: 12px; margin-bottom: 8px; cursor: pointer; transition: background .15s; }
+      .listing-mini:hover { background: var(--primary-lt); }
+      .listing-mini-dot  { width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0; }
+      .listing-mini-dot.verified   { background: var(--verified); }
+      .listing-mini-dot.unverified { background: var(--text-3); }
+      .listing-mini-title { font-size: 13px; font-weight: 600; color: var(--text-1); }
+      .listing-mini-sub   { font-size: 12px; color: var(--text-2); }
+
+      /* ── Screen 6 – Contact ── */
+      .contact-agent-bar  { background: var(--primary-lt); margin: 16px 20px; border-radius: 14px; padding: 14px 16px; display: flex; align-items: center; gap: 12px; }
+      .contact-avatar     { width: 42px; height: 42px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-family: "Syne", sans-serif; font-size: 15px; font-weight: 700; color: white; flex-shrink: 0; }
+      .contact-agent-name { font-size: 14px; font-weight: 600; color: var(--primary-dk); }
+      .form-group  { padding: 0 20px 16px; }
+      .form-label  { font-size: 13px; font-weight: 600; color: var(--text-1); margin-bottom: 6px; display: block; }
+      .form-input  { width: 100%; height: 48px; background: var(--bg); border: 1.5px solid var(--border); border-radius: 12px; padding: 0 16px; font-family: "DM Sans", sans-serif; font-size: 14px; color: var(--text-1); outline: none; transition: border-color .15s; }
+      .form-input:focus { border-color: var(--primary); background: white; }
+      textarea.form-input { height: 88px; padding: 12px 16px; resize: none; line-height: 1.5; }
+      .form-footer { padding: 0 20px 20px; }
+      .reply-note  { text-align: center; font-size: 12px; color: var(--text-3); margin-top: 10px; }
+
+      /* ── Screen 7 – All Agents ── */
+      .agent-card { background: var(--white); border-radius: 16px; padding: 16px; margin: 0 20px 12px; cursor: pointer; box-shadow: 0 2px 12px rgba(0,0,0,.06); transition: transform .15s; }
+      .agent-card:hover { transform: translateY(-2px); }
+      .agent-card-head  { display: flex; align-items: center; gap: 12px; margin-bottom: 12px; }
+      .agent-card-avatar { width: 52px; height: 52px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-family: "Syne", sans-serif; font-size: 18px; font-weight: 700; color: white; flex-shrink: 0; }
+      .agent-card-name  { font-size: 15px; font-weight: 700; color: var(--text-1); }
+      .agent-card-sub   { font-size: 12px; color: var(--text-2); margin-top: 1px; }
+      .stat-grid  { display: grid; grid-template-columns: repeat(3,1fr); gap: 8px; text-align: center; }
+      .stat-cell  { background: var(--bg); border-radius: 10px; padding: 8px 4px; }
+      .stat-cell-val { font-size: 15px; font-weight: 700; color: var(--text-1); }
+      .stat-cell-lbl { font-size: 10px; color: var(--text-3); }
+
+      /* ── Toast ── */
+      .toast {
+        position: absolute; bottom: 90px; left: 50%;
+        transform: translateX(-50%) translateY(20px);
+        background: var(--text-1); color: white; padding: 12px 20px;
+        border-radius: 12px; font-size: 13px; font-weight: 500;
+        opacity: 0; transition: opacity .3s, transform .3s; z-index: 200;
+        pointer-events: none; white-space: nowrap;
+      }
+      .toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+    </style>
+  </head>
+  <body>
+    <div class="device-shell">
+      <div class="screens-wrapper">
+
+        <!-- ══ SCREEN 1 – HOME ══ -->
+        <div class="screen active" id="screen-1">
+          <div class="screen-scroll">
+            <div class="s1-hero">
+              <div class="s1-logo">RentVerify</div>
+              <div class="s1-tagline">Find your room near UTM — every agent trusted</div>
+              <div class="home-search-row">
+                <div class="home-search-box" onclick="goto(2)">
+                  <span>🔍</span><span>Search rooms near UTM...</span>
+                </div>
+                <div class="filter-btn-hero" onclick="openFilter()" title="Filters">⚙️</div>
+              </div>
+            </div>
+            <div class="section-title">Verified Agents</div>
+            <div class="section-sub">All agents on RentVerify are licensed &amp; LPPEH-verified</div>
+            <div id="home-agents" class="agent-strip"></div>
+            <div class="section-title">Featured Listings</div>
+            <div id="home-listings"></div>
+            <div style="height:8px"></div>
+          </div>
+          <div class="nav-bar">
+            <div class="nav-item active">
+              <div class="nav-icon">🏠</div><div class="nav-label">Home</div>
+            </div>
+            <div class="nav-item" onclick="goto(2)">
+              <div class="nav-icon">🔍</div><div class="nav-label">Search</div>
+            </div>
+            <div class="nav-item">
+              <div class="nav-icon">❤️</div><div class="nav-label">Saved</div>
+            </div>
+            <div class="nav-item" onclick="goto(7)">
+              <div class="nav-icon">👤</div><div class="nav-label">Agents</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- ══ SCREEN 2 – SEARCH ══ -->
+        <div class="screen" id="screen-2">
+          <div class="search-screen-bar">
+            <button class="back-btn" onclick="goback()">←</button>
+            <div class="search-input-wrap">
+              <span class="search-icon">🔍</span>
+              <input class="search-input" id="search-input" type="text"
+                placeholder="Location, room type, price..."
+                oninput="runSearch(this.value)" />
+            </div>
+            <div class="filter-btn-bar filter-badge" onclick="openFilter()" title="Open filters">⚙️</div>
+          </div>
+          <div class="screen-scroll">
+            <div class="search-results-header">
+              <div class="results-count"><span id="search-count-num">0</span> listings found</div>
+              <button class="sort-btn">Sort: Recommended ↕</button>
+            </div>
+            <div id="search-results"></div>
+            <div style="height:16px"></div>
+          </div>
+          <div class="nav-bar">
+            <div class="nav-item" onclick="goto(1)">
+              <div class="nav-icon">🏠</div><div class="nav-label">Home</div>
+            </div>
+            <div class="nav-item active">
+              <div class="nav-icon">🔍</div><div class="nav-label">Search</div>
+            </div>
+            <div class="nav-item">
+              <div class="nav-icon">❤️</div><div class="nav-label">Saved</div>
+            </div>
+            <div class="nav-item" onclick="goto(7)">
+              <div class="nav-icon">👤</div><div class="nav-label">Agents</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- ══ SCREEN 3 – LISTING DETAIL ══ -->
+        <div class="screen" id="screen-3">
+          <div class="top-bar">
+            <button class="back-btn" onclick="goback()">←</button>
+            <span class="top-bar-title" id="s3-title">Listing</span>
+          </div>
+          <div class="screen-scroll">
+            <div id="listing-detail-content"></div>
+            <div style="padding:16px 20px 8px">
+              <button class="btn-primary" onclick="gotoContactFromListing()">Contact agent →</button>
+            </div>
+            <div style="height:8px"></div>
+          </div>
+          <div class="nav-bar">
+            <div class="nav-item" onclick="goto(1)">
+              <div class="nav-icon">🏠</div><div class="nav-label">Home</div>
+            </div>
+            <div class="nav-item" onclick="goto(2)">
+              <div class="nav-icon">🔍</div><div class="nav-label">Search</div>
+            </div>
+            <div class="nav-item">
+              <div class="nav-icon">❤️</div><div class="nav-label">Saved</div>
+            </div>
+            <div class="nav-item" onclick="goto(7)">
+              <div class="nav-icon">👤</div><div class="nav-label">Agents</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- ══ SCREEN 5 – AGENT PROFILE ══ -->
+        <div class="screen" id="screen-5">
+          <div class="top-bar">
+            <button class="back-btn" onclick="goback()">←</button>
+            <span class="top-bar-title" id="s5-title">Agent Profile</span>
+          </div>
+          <div class="screen-scroll">
+            <div id="agent-profile-content"></div>
+            <div style="padding:16px 20px 8px">
+              <button class="btn-primary" onclick="goto(6)">Contact this agent →</button>
+            </div>
+            <div style="height:8px"></div>
+          </div>
+          <div class="nav-bar">
+            <div class="nav-item" onclick="goto(1)">
+              <div class="nav-icon">🏠</div><div class="nav-label">Home</div>
+            </div>
+            <div class="nav-item" onclick="goto(2)">
+              <div class="nav-icon">🔍</div><div class="nav-label">Search</div>
+            </div>
+            <div class="nav-item">
+              <div class="nav-icon">❤️</div><div class="nav-label">Saved</div>
+            </div>
+            <div class="nav-item active" onclick="goto(7)">
+              <div class="nav-icon">👤</div><div class="nav-label">Agents</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- ══ SCREEN 6 – CONTACT ══ -->
+        <div class="screen" id="screen-6">
+          <div class="top-bar">
+            <button class="back-btn" onclick="goback()">←</button>
+            <span class="top-bar-title">Contact Agent</span>
+          </div>
+          <div class="screen-scroll">
+            <div class="contact-agent-bar">
+              <div class="contact-avatar" id="contact-avatar" style="background:var(--primary)">AH</div>
+              <div>
+                <div class="contact-agent-name" id="contact-agent-name">Ahmad Hafiz</div>
+                <span class="agent-badge" style="margin-top:4px;display:inline-flex">✓ Verified Agent</span>
+              </div>
+            </div>
+            <div class="form-group">
+              <label class="form-label">Your full name</label>
+              <input class="form-input" type="text" placeholder="e.g. Muhammad Imam" />
+            </div>
+            <div class="form-group">
+              <label class="form-label">UTM student email</label>
+              <input class="form-input" type="email" placeholder="e.g. imam@graduate.utm.my" />
+            </div>
+            <div class="form-group">
+              <label class="form-label">Phone number (WhatsApp)</label>
+              <input class="form-input" type="tel" placeholder="e.g. 016-XXXXXXX" />
+            </div>
+            <div class="form-group">
+              <label class="form-label">Message <span style="color:var(--text-3);font-weight:400">(optional)</span></label>
+              <textarea class="form-input" placeholder="Hi, I'm interested in your listing near UTM..."></textarea>
+            </div>
+            <div style="padding:0 20px 16px;display:flex;align-items:center;gap:8px;font-size:12px;color:var(--text-2);">
+              <span>🔒</span><span>Your info is shared only with this verified agent.</span>
+            </div>
+            <div class="form-footer">
+              <button class="btn-primary" onclick="sendMsg()">Send message</button>
+              <div class="reply-note">You'll get a WhatsApp reply within 24 hours</div>
+            </div>
+            <div style="height:8px"></div>
+          </div>
+          <div class="nav-bar">
+            <div class="nav-item" onclick="goto(1)">
+              <div class="nav-icon">🏠</div><div class="nav-label">Home</div>
+            </div>
+            <div class="nav-item" onclick="goto(2)">
+              <div class="nav-icon">🔍</div><div class="nav-label">Search</div>
+            </div>
+            <div class="nav-item">
+              <div class="nav-icon">❤️</div><div class="nav-label">Saved</div>
+            </div>
+            <div class="nav-item" onclick="goto(7)">
+              <div class="nav-icon">👤</div><div class="nav-label">Agents</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- ══ SCREEN 7 – ALL AGENTS ══ -->
+        <div class="screen" id="screen-7">
+          <div class="top-bar">
+            <button class="back-btn" onclick="goback()">←</button>
+            <span class="top-bar-title">Verified Agents</span>
+            <span class="top-bar-sub" id="agents-count"></span>
+          </div>
+          <div class="screen-scroll">
+            <div style="padding:14px 20px 8px;font-size:13px;color:var(--text-2);line-height:1.5;background:var(--primary-lt);margin:12px 20px;border-radius:14px;">
+              🛡️ All agents on RentVerify are independently verified and licensed by <strong>LPPEH Malaysia</strong>. You can trust any agent you see here.
+            </div>
+            <div id="all-agents-list" style="padding-top:8px"></div>
+            <div style="height:8px"></div>
+          </div>
+          <div class="nav-bar">
+            <div class="nav-item" onclick="goto(1)">
+              <div class="nav-icon">🏠</div><div class="nav-label">Home</div>
+            </div>
+            <div class="nav-item" onclick="goto(2)">
+              <div class="nav-icon">🔍</div><div class="nav-label">Search</div>
+            </div>
+            <div class="nav-item">
+              <div class="nav-icon">❤️</div><div class="nav-label">Saved</div>
+            </div>
+            <div class="nav-item active">
+              <div class="nav-icon">👤</div><div class="nav-label">Agents</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- ══ FILTER DRAWER (shared overlay) ══ -->
+        <div class="filter-overlay" id="filter-overlay" onclick="closeFilter()"></div>
+        <div class="filter-drawer" id="filter-drawer">
+          <div class="drawer-handle"></div>
+          <div class="drawer-header">
+            <div class="drawer-title">Filters</div>
+            <button class="drawer-reset" onclick="resetFilters()">Reset</button>
+          </div>
+          <div class="verify-toggle-card">
+            <div class="verify-toggle-left">
+              <div class="verify-toggle-title">Show Verified Listings Only</div>
+              <div class="verify-toggle-sub">Only show listings physically inspected by the RentVerify team</div>
+            </div>
+            <div class="toggle-track off" id="toggle-verified" onclick="toggleVerified()">
+              <div class="toggle-thumb"></div>
+            </div>
+          </div>
+          <div class="filter-group">
+            <div class="filter-group-title">Budget (per month)</div>
+            <div class="range-track"><div class="range-fill"></div><div class="range-thumb"></div></div>
+            <div class="range-labels"><span>RM 200</span><span>RM 1,500+</span></div>
+          </div>
+          <div class="filter-group">
+            <div class="filter-group-title">Room Type</div>
+            <div class="chip-row">
+              <div class="filter-chip selected" onclick="toggleChip(this)">Any</div>
+              <div class="filter-chip" onclick="toggleChip(this)">Single room</div>
+              <div class="filter-chip" onclick="toggleChip(this)">Master room</div>
+              <div class="filter-chip" onclick="toggleChip(this)">Studio</div>
+              <div class="filter-chip" onclick="toggleChip(this)">Whole unit</div>
+            </div>
+          </div>
+          <div class="filter-group">
+            <div class="filter-group-title">Distance from UTM</div>
+            <div class="chip-row">
+              <div class="filter-chip selected" onclick="toggleChip(this)">Any</div>
+              <div class="filter-chip" onclick="toggleChip(this)">Walking (&lt;10 min)</div>
+              <div class="filter-chip" onclick="toggleChip(this)">Bus (10–25 min)</div>
+              <div class="filter-chip" onclick="toggleChip(this)">Car (25+ min)</div>
+            </div>
+          </div>
+          <div class="filter-group">
+            <div class="filter-group-title">Furnishing</div>
+            <div class="chip-row">
+              <div class="filter-chip selected" onclick="toggleChip(this)">Any</div>
+              <div class="filter-chip" onclick="toggleChip(this)">Fully furnished</div>
+              <div class="filter-chip" onclick="toggleChip(this)">Semi-furnished</div>
+              <div class="filter-chip" onclick="toggleChip(this)">Unfurnished</div>
+            </div>
+          </div>
+          <div class="filter-group">
+            <div class="filter-group-title">Features</div>
+            <div class="chip-row">
+              <div class="filter-chip" onclick="toggleChip(this)">👩 Female only</div>
+              <div class="filter-chip" onclick="toggleChip(this)">🅿️ Parking</div>
+              <div class="filter-chip" onclick="toggleChip(this)">🏊 Pool</div>
+              <div class="filter-chip" onclick="toggleChip(this)">🏋 Gym</div>
+              <div class="filter-chip" onclick="toggleChip(this)">🛡 Gated</div>
+              <div class="filter-chip" onclick="toggleChip(this)">📶 WiFi included</div>
+            </div>
+          </div>
+          <div class="drawer-apply">
+            <button class="btn-primary" onclick="applyFilters()">Apply filters</button>
+          </div>
+        </div>
+
+      </div><!-- /screens-wrapper -->
+
+      <div class="toast" id="toast"></div>
+    </div><!-- /device-shell -->
+
+    <!-- ── External data (agents + listings) ── -->
+    <script src="data.js"></script>
+
+    <script>
+      // ════════════════════════════════════════
+      //  STATE
+      // ════════════════════════════════════════
+      let currentScreen  = 1;
+      let navHistory     = [1];
+      let currentAgent   = 0;
+      let currentListing = 0;
+      let verifiedFilterOn = false;
+      let searchQuery    = "";
+
+      // ════════════════════════════════════════
+      //  NAVIGATION
+      // ════════════════════════════════════════
+      function goto(n) {
+        const cur  = document.getElementById("screen-" + currentScreen);
+        const next = document.getElementById("screen-" + n);
+        if (!next || n === currentScreen) return;
+        cur.classList.remove("active");
+        cur.classList.add("exit-left");
+        setTimeout(() => {
+          cur.classList.remove("exit-left");
+          const sc = cur.querySelector(".screen-scroll");
+          if (sc) sc.scrollTop = 0;
+        }, 340);
+        next.classList.add("active");
+        navHistory.push(n);
+        currentScreen = n;
+      }
+      function goback() {
+        if (navHistory.length <= 1) return;
+        navHistory.pop();
+        const prev = navHistory[navHistory.length - 1];
+        const cur  = document.getElementById("screen-" + currentScreen);
+        document.getElementById("screen-" + prev).classList.add("active");
+        cur.classList.remove("active");
+        currentScreen = prev;
+      }
+      function gotoAgent(idx) { currentAgent = idx; renderAgentProfile(idx); goto(5); }
+      function gotoListing(id) { currentListing = id; renderListingDetail(id); goto(3); }
+      function gotoContactFromListing() {
+        const l = LISTINGS[currentListing];
+        currentAgent = l.agentIdx;
+        renderContact(l.agentIdx);
+        goto(6);
+      }
+
+      // ════════════════════════════════════════
+      //  FILTER DRAWER
+      // ════════════════════════════════════════
+      function openFilter()  { document.getElementById("filter-overlay").classList.add("open"); document.getElementById("filter-drawer").classList.add("open"); }
+      function closeFilter() { document.getElementById("filter-overlay").classList.remove("open"); document.getElementById("filter-drawer").classList.remove("open"); }
+      function toggleVerified() {
+        verifiedFilterOn = !verifiedFilterOn;
+        document.getElementById("toggle-verified").classList.toggle("off", !verifiedFilterOn);
+      }
+      function toggleChip(el) {
+        el.closest(".chip-row").querySelectorAll(".filter-chip").forEach(c => c.classList.remove("selected"));
+        el.classList.add("selected");
+      }
+      function resetFilters() {
+        verifiedFilterOn = false;
+        document.getElementById("toggle-verified").classList.add("off");
+        document.querySelectorAll(".chip-row").forEach(row =>
+          row.querySelectorAll(".filter-chip").forEach((c,i) => c.classList.toggle("selected", i === 0))
+        );
+      }
+      function applyFilters() {
+        closeFilter();
+        const q = document.getElementById("search-input") ? document.getElementById("search-input").value : "";
+        runSearch(q);
+        renderHomeListings();
+        showToast("Filters applied ✓");
+      }
+
+      // ════════════════════════════════════════
+      //  SEARCH
+      // ════════════════════════════════════════
+      function filteredListings(q) {
+        const query = (q || "").toLowerCase().trim();
+        return LISTINGS.filter(l => {
+          const matchSearch = !query ||
+            l.title.toLowerCase().includes(query) ||
+            l.loc.toLowerCase().includes(query) ||
+            l.type.toLowerCase().includes(query) ||
+            AGENTS[l.agentIdx].name.toLowerCase().includes(query) ||
+            l.price.toLowerCase().includes(query) ||
+            l.dist.toLowerCase().includes(query);
+          const matchVerified = !verifiedFilterOn || l.listingVerified;
+          return matchSearch && matchVerified;
+        });
+      }
+      function runSearch(q) {
+        searchQuery = q;
+        const results   = filteredListings(q);
+        const container = document.getElementById("search-results");
+        const countEl   = document.getElementById("search-count-num");
+        countEl.textContent = results.length;
+        if (results.length === 0) {
+          container.innerHTML = `<div class="no-results"><div class="no-results-icon">🔎</div><div class="no-results-text">No listings found for "${q}"</div><div style="font-size:12px;color:var(--text-3);margin-top:6px;">Try a different location or room type</div></div>`;
+          return;
+        }
+        const sorted = verifiedFilterOn
+          ? [...results].sort((a,b) => (b.listingVerified ? 1 : 0) - (a.listingVerified ? 1 : 0))
+          : results;
+        container.innerHTML = sorted.map(l => listingCardFullHTML(l)).join("");
+      }
+
+      // ════════════════════════════════════════
+      //  RENDER HELPERS
+      // ════════════════════════════════════════
+      function starsHTML(rating) {
+        const n = parseFloat(rating), full = Math.floor(n), half = n - full >= .5 ? 1 : 0, empty = 5 - full - half;
+        return '<span class="star-gold">' + "★".repeat(full) + (half ? "½" : "") + "</span>" + "☆".repeat(empty);
+      }
+
+      function imgBgStyle(l) {
+        return l.img
+          ? `background-image:url('${l.img}');background-color:#E8E8F4;`
+          : `background:${l.color};`;
+      }
+
+      function verifiedBadgeHTML(small) {
+        if (small) return `<span class="verified-listing-badge" style="font-size:9px;padding:3px 7px;gap:4px;"><span class="vc" style="width:14px;height:14px;font-size:9px;">✓</span>Verified</span>`;
+        return `<span class="verified-listing-badge"><span class="vc">✓</span>Verified Listing</span>`;
+      }
+      function unverifiedBadgeHTML(small) {
+        if (small) return `<span class="unverified-listing-badge" style="font-size:9px;padding:3px 7px;">⚠ Unverified</span>`;
+        return `<span class="unverified-listing-badge">⚠ Not personally verified</span>`;
+      }
+
+      function listingCardFullHTML(l) {
+        const agent  = AGENTS[l.agentIdx];
+        const vClass = l.listingVerified ? "verified-listing" : "unverified-listing unverified-dim";
+        const badge  = l.listingVerified ? verifiedBadgeHTML(false) : unverifiedBadgeHTML(false);
+        const imgCls = l.img ? "has-img" : "";
+        return `
+    <div class="listing-card-full ${vClass}" onclick="gotoListing(${l.id})">
+      <div class="listing-img-full ${imgCls}" style="${imgBgStyle(l)}${!l.listingVerified && !l.img ? 'filter:saturate(.5);':''}">
+        ${!l.img ? `<span style="z-index:1;">${l.emoji}</span>` : ''}
+        <div class="img-badge">${badge}</div>
+        <div class="img-badge-right">${l.avail}</div>
+      </div>
+      <div class="listing-body-full">
+        <div class="listing-row">
+          <div class="listing-title-full">${l.title}</div>
+          <div class="listing-price-full">${l.price}</div>
+        </div>
+        <div class="listing-loc-full">📍 ${l.loc} · ${l.type} · ${l.dist} · per month</div>
+        <div class="listing-features">${l.features.slice(0,3).map(f => `<span class="feat-tag">${f}</span>`).join("")}</div>
+        <div class="listing-meta">
+          <div class="rating-text">${starsHTML(l.rating)} ${l.rating} (${l.reviews})</div>
+          <span class="agent-badge">by ${agent.name}</span>
+        </div>
+      </div>
+    </div>`;
+      }
+
+      function listingCardSmallHTML(l) {
+        const agent  = AGENTS[l.agentIdx];
+        const badge  = l.listingVerified ? verifiedBadgeHTML(true) : unverifiedBadgeHTML(true);
+        const imgCls = l.img ? "has-img" : "";
+        return `
+    <div class="listing-card" onclick="gotoListing(${l.id})">
+      <div class="listing-img ${imgCls}" style="${imgBgStyle(l)}${!l.listingVerified && !l.img ? 'filter:saturate(.5);':''}">
+        ${!l.img ? `<span style="font-size:36px;z-index:1;">${l.emoji}</span>` : ''}
+        <div class="badge-pos">${badge}</div>
+        <div class="price-tag">${l.price}/mo</div>
+      </div>
+      <div class="listing-body">
+        <div class="listing-title-s">${l.title}</div>
+        <div class="listing-loc-s">📍 ${l.loc} · ${agent.name}</div>
+        <div class="listing-foot">
+          <div class="listing-price-s">${l.price} / month</div>
+          <div style="font-size:12px;color:var(--text-2);">${starsHTML(l.rating)} ${l.rating}</div>
+        </div>
+      </div>
+    </div>`;
+      }
+
+      function renderHomeListings() {
+        const verified   = LISTINGS.filter(l =>  l.listingVerified);
+        const unverified = LISTINGS.filter(l => !l.listingVerified);
+        const mixed = [];
+        let vi = 0, ui = 0;
+        while (mixed.length < 10 && (vi < verified.length || ui < unverified.length)) {
+          if (vi < verified.length)   mixed.push(verified[vi++]);
+          if (vi < verified.length)   mixed.push(verified[vi++]);
+          if (ui < unverified.length) mixed.push(unverified[ui++]);
+        }
+        document.getElementById("home-listings").innerHTML = mixed.slice(0, 9).map(l => listingCardSmallHTML(l)).join("");
+      }
+
+      function renderAgentStrip() {
+        document.getElementById("home-agents").innerHTML = AGENTS.map((a, idx) => {
+          const count = LISTINGS.filter(l => l.agentIdx === idx).length;
+          return `
+      <div class="agent-chip" onclick="gotoAgent(${idx})">
+        <div class="agent-chip-avatar" style="background:${a.color}">${a.initials}</div>
+        <div class="agent-chip-name">${a.name.split(" ")[0]}</div>
+        <div class="agent-chip-sub">${count} listings</div>
+      </div>`;
+        }).join("");
+      }
+
+      function renderListingDetail(id) {
+        const l     = LISTINGS[id];
+        const agent = AGENTS[l.agentIdx];
+        document.getElementById("s3-title").textContent = l.type;
+        const verifiedBox = l.listingVerified
+          ? `<div class="verify-status-box verified">
+               <div class="verify-status-title verified">✓ Personally verified listing</div>
+               <div class="verify-status-sub">A RentVerify team member has physically visited and confirmed this room matches the description. Photos and details are accurate.</div>
+             </div>`
+          : `<div class="verify-status-box unverified">
+               <div class="verify-status-title unverified">⚠ Not personally verified</div>
+               <div class="verify-status-sub">This listing has not been physically inspected by our team. Details are provided by the agent and have not been independently confirmed.</div>
+             </div>`;
+        const imgCls = l.img ? "has-img" : "";
+        document.getElementById("listing-detail-content").innerHTML = `
+    <div class="listing-hero ${imgCls}" style="${imgBgStyle(l)}${!l.listingVerified && !l.img ? 'filter:saturate(.6);':''}">
+      ${!l.img ? `<span style="z-index:1;">${l.emoji}</span>` : ''}
+      <div class="listing-hero-badge">${l.listingVerified ? verifiedBadgeHTML(false) : unverifiedBadgeHTML(false)}</div>
+      <div class="listing-hero-price">${l.price} / month</div>
+    </div>
+    <div class="listing-detail-body">
+      <div class="listing-detail-title">${l.title}</div>
+      <div class="listing-detail-loc">📍 ${l.loc} · ${l.type} · ${l.furnish} · ${l.dist}</div>
+      ${verifiedBox}
+      <div class="features-grid">
+        ${l.features.map(f => `<div class="feature-item"><span class="feature-icon">${f.split(" ")[0]}</span><span>${f.split(" ").slice(1).join(" ")}</span></div>`).join("")}
+      </div>
+      <div style="font-size:12px;color:var(--text-2);margin-bottom:16px;">${starsHTML(l.rating)} <strong>${l.rating}</strong> from ${l.reviews} reviews &nbsp;·&nbsp; ${l.avail}</div>
+      <div style="font-size:13px;font-weight:700;color:var(--text-3);text-transform:uppercase;letter-spacing:.05em;margin-bottom:8px;">Agent</div>
+      <div class="agent-row-card" onclick="gotoAgent(${l.agentIdx})">
+        <div class="agent-row-avatar" style="background:${agent.color};">${agent.initials}</div>
+        <div>
+          <div class="agent-row-name">${agent.name}</div>
+          <div class="agent-row-sub">${agent.sub} &nbsp;·&nbsp; <span style="color:var(--verified);font-weight:600;">✓ Verified Agent</span></div>
+        </div>
+        <div class="agent-row-arrow">›</div>
+      </div>
+    </div>`;
+      }
+
+      function renderAgentProfile(idx) {
+        const a = AGENTS[idx];
+        document.getElementById("s5-title").textContent = a.name;
+        const agentListings = LISTINGS.filter(l => l.agentIdx === idx);
+        const dynamicStats  = [String(agentListings.length), a.stats[1], a.stats[2]];
+        const statsHtml = dynamicStats.map((v,i) =>
+          `<div class="agent-stat"><div class="stat-val">${v}</div><div class="stat-lbl">${a.statLabels[i]}</div></div>`
+        ).join("");
+        const listingsHtml = agentListings.map(l =>
+          `<div class="listing-mini" onclick="gotoListing(${l.id})">
+      <div class="listing-mini-dot ${l.listingVerified ? 'verified' : 'unverified'}"></div>
+      <div>
+        <div class="listing-mini-title">${l.type} · ${l.price}/mo · ${l.loc.split(",")[0]}</div>
+        <div class="listing-mini-sub">${l.listingVerified ? "✓ Verified listing" : "⚠ Not yet verified"} · ${l.avail}</div>
+      </div>
+    </div>`
+        ).join("");
+        document.getElementById("agent-profile-content").innerHTML = `
+    <div class="agent-hero">
+      <div class="agent-avatar" style="background:${a.color}">${a.initials}</div>
+      <span class="agent-badge" style="font-size:11px;">✓ Verified Agent · LPPEH Licensed</span>
+      <div class="agent-name">${a.name}</div>
+      <div class="agent-sub-text">${a.sub}</div>
+    </div>
+    <div class="agent-stats">${statsHtml}</div>
+    <div class="info-section">
+      <div class="info-section-title">About</div>
+      <div class="info-text">${a.about}</div>
+      <div class="license-card">
+        <div class="license-main">🏛 ${a.license}</div>
+        <div class="license-sub">Tap to verify on LPPEH portal</div>
+      </div>
+    </div>
+    <div class="info-section">
+      <div class="info-section-title">Listings (${agentListings.length})</div>
+      ${listingsHtml}
+    </div>`;
+      }
+
+      function renderContact(idx) {
+        const a = AGENTS[idx];
+        document.getElementById("contact-avatar").textContent = a.initials;
+        document.getElementById("contact-avatar").style.background = a.color;
+        document.getElementById("contact-agent-name").textContent = a.name;
+      }
+
+      function renderAllAgents() {
+        const countEl = document.getElementById("agents-count");
+        if (countEl) countEl.textContent = AGENTS.length + " agents";
+        document.getElementById("all-agents-list").innerHTML = AGENTS.map((a, idx) => {
+          const count = LISTINGS.filter(l => l.agentIdx === idx).length;
+          return `
+    <div class="agent-card" onclick="gotoAgent(${idx})">
+      <div class="agent-card-head">
+        <div class="agent-card-avatar" style="background:${a.color}">${a.initials}</div>
+        <div style="flex:1">
+          <div class="agent-card-name">${a.name}</div>
+          <div class="agent-card-sub">${a.sub}</div>
+        </div>
+        <span class="agent-badge" style="font-size:9px;flex-shrink:0;">✓ Verified</span>
+      </div>
+      <div class="stat-grid">
+        <div class="stat-cell"><div class="stat-cell-val">${count}</div><div class="stat-cell-lbl">Listings</div></div>
+        <div class="stat-cell"><div class="stat-cell-val">${a.stats[1]}</div><div class="stat-cell-lbl">Rating</div></div>
+        <div class="stat-cell"><div class="stat-cell-val">${a.stats[2]}</div><div class="stat-cell-lbl">Response</div></div>
+      </div>
+    </div>`;
+        }).join("");
+      }
+
+      // ════════════════════════════════════════
+      //  MISC
+      // ════════════════════════════════════════
+      function showToast(msg) {
+        const t = document.getElementById("toast");
+        t.textContent = msg;
+        t.classList.add("show");
+        setTimeout(() => t.classList.remove("show"), 2600);
+      }
+      function sendMsg() {
+        const a = AGENTS[currentAgent];
+        showToast("✅ Sent! " + a.name + " will reply on WhatsApp.");
+        setTimeout(() => goto(1), 2200);
+      }
+
+      // ════════════════════════════════════════
+      //  INIT
+      // ════════════════════════════════════════
+      renderAgentStrip();
+      renderHomeListings();
+      runSearch("");
+      renderAllAgents();
+      renderContact(0);
+    </script>
+  </body>
+</html>
