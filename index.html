@@ -3,7 +3,7 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>RentVerify – UTM Student Housing</title>
+    <title>Rent-For-Me – UTM Student Housing</title>
     <link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700;1,9..40,400&family=Syne:wght@600;700;800&display=swap" rel="stylesheet"/>
     <style>
       *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
@@ -485,8 +485,8 @@
         <div class="screen active" id="screen-1">
           <div class="screen-scroll">
             <div class="s1-hero">
-              <div class="s1-logo">RentVerify</div>
-              <div class="s1-tagline">Find your room near UTM — every agent trusted</div>
+              <div class="s1-logo">Rent-For-Me</div>
+              <div class="s1-tagline">We verify the rooms ourselves!</div>
               <div class="home-search-row">
                 <div class="home-search-box" onclick="goto(2)">
                   <span>🔍</span><span>Search rooms near UTM...</span>
@@ -495,7 +495,7 @@
               </div>
             </div>
             <div class="section-title">Verified Agents</div>
-            <div class="section-sub">All agents on RentVerify are licensed &amp; LPPEH-verified</div>
+            <div class="section-sub">All agents on Rent-For-Me are licensed &amp; LPPEH-verified</div>
             <div id="home-agents" class="agent-strip"></div>
             <div class="section-title">Featured Listings</div>
             <div id="home-listings"></div>
@@ -675,7 +675,7 @@
           </div>
           <div class="screen-scroll">
             <div style="padding:14px 20px 8px;font-size:13px;color:var(--text-2);line-height:1.5;background:var(--primary-lt);margin:12px 20px;border-radius:14px;">
-              🛡️ All agents on RentVerify are independently verified and licensed by <strong>LPPEH Malaysia</strong>. You can trust any agent you see here.
+              🛡️ All agents on Rent-For-Me are independently verified and licensed by <strong>LPPEH Malaysia</strong>. You can trust any agent you see here.
             </div>
             <div id="all-agents-list" style="padding-top:8px"></div>
             <div style="height:8px"></div>
@@ -707,7 +707,7 @@
           <div class="verify-toggle-card">
             <div class="verify-toggle-left">
               <div class="verify-toggle-title">Show Verified Listings Only</div>
-              <div class="verify-toggle-sub">Only show listings physically inspected by the RentVerify team</div>
+              <div class="verify-toggle-sub">Only show listings physically inspected by the Rent-For-Me team</div>
             </div>
             <div class="toggle-track off" id="toggle-verified" onclick="toggleVerified()">
               <div class="toggle-thumb"></div>
@@ -982,7 +982,7 @@
         const verifiedBox = l.listingVerified
           ? `<div class="verify-status-box verified">
                <div class="verify-status-title verified">✓ Personally verified listing</div>
-               <div class="verify-status-sub">A RentVerify team member has physically visited and confirmed this room matches the description. Photos and details are accurate.</div>
+               <div class="verify-status-sub">A Rent-For-Me team member has physically visited and confirmed this room matches the description. Photos and details are accurate.</div>
              </div>`
           : `<div class="verify-status-box unverified">
                <div class="verify-status-title unverified">⚠ Not personally verified</div>
